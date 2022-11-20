@@ -323,7 +323,9 @@ void NvgWindow::drawLaneLines(QPainter &painter, const UIScene &scene) {
 void NvgWindow::drawLead(QPainter &painter, const cereal::ModelDataV2::LeadDataV3::Reader &lead_data, const QPointF &vd) {
   const float speedBuff = 10.;
   const float leadBuff = 40.;
-  const float d_rel = lead_data.getX()[0];
+
+  const float d_rel = lead_data.getX()[0]; 
+
   const float v_rel = lead_data.getV()[0];
 
   float fillAlpha = 0;
@@ -350,6 +352,17 @@ void NvgWindow::drawLead(QPainter &painter, const cereal::ModelDataV2::LeadDataV
   QPointF chevron[] = {{x + (sz * 1.25), y + sz}, {x, y}, {x - (sz * 1.25), y + sz}};
   painter.setBrush(redColor(fillAlpha));
   painter.drawPolygon(chevron, std::size(chevron));
+
+  //前车距离 单位米
+  const int lead_distance=(int)d_rel;
+  
+  //前车速度 KM/H
+  const int lead_speed=(int)((((int)(v_rel))*60*60)/1000);
+
+  painter.setPen(Qt::white);
+  
+  QString leadInfo=QString("%1km/h %2m").arg(QString::number(lead_speed),QString::number(lead_distance));
+  painter.drawText(glow[2].x()+10,glow[2].y()+14, leadInfo);
 }
 
 void NvgWindow::paintGL() {

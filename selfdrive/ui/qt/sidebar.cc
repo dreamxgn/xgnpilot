@@ -63,7 +63,7 @@ void Sidebar::updateState(const UIState &s) {
   }
   setProperty("connectStatus", QVariant::fromValue(connectStatus));
 
-  QString tempStr = QString("TEMP\n%1").arg(QString::number(deviceState.getMaxCompTemp()));
+  QString tempStr = QString("温度\n%1").arg(QString::number(deviceState.getMaxCompTemp()));
   
   ItemStatus tempStatus = {tempStr, danger_color};
   auto ts = deviceState.getThermalStatus();
@@ -74,11 +74,11 @@ void Sidebar::updateState(const UIState &s) {
   }
   setProperty("tempStatus", QVariant::fromValue(tempStatus));
 
-  ItemStatus pandaStatus = {"VEHICLE\nONLINE", good_color};
+  ItemStatus pandaStatus = {"车辆\n连线", good_color};
   if (s.scene.pandaType == cereal::PandaState::PandaType::UNKNOWN) {
     pandaStatus = {"NO\nPANDA", danger_color};
   } else if (s.scene.started && !sm["liveLocationKalman"].getLiveLocationKalman().getGpsOK()) {
-    pandaStatus = {"GPS\nSEARCHING", warning_color};
+    pandaStatus = {"GPS\n搜索中", warning_color};
   }
   setProperty("pandaStatus", QVariant::fromValue(pandaStatus));
 }
