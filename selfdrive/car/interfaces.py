@@ -3,6 +3,7 @@ import time
 from abc import abstractmethod, ABC
 from typing import Dict, Tuple, List
 
+from common.params import Params, ParamKeyType
 from cereal import car
 from common.kalman.simple_kalman import KF1D
 from common.realtime import DT_CTRL
@@ -27,11 +28,13 @@ class CarInterfaceBase(ABC):
   def __init__(self, CP, CarController, CarState):
     self.CP = CP
     self.VM = VehicleModel(CP)
-
+    self.params = Params()
+    self.params.clear_all(ParamKeyType.CLEAR_ON_MANAGER_START)
     self.frame = 0
     self.steering_unpressed = 0
     self.low_speed_alert = False
     self.silent_steer_warning = True
+    self.keep_full_time=self.params.get_bool("KeepFullTime")
 
     if CarState is not None:
       self.CS = CarState(CP)
@@ -155,17 +158,22 @@ class CarInterfaceBase(ABC):
 
     # Disable on rising edge of gas or brake. Also disable on brake when speed > 0.
     # 刹车踩下禁用控制
-    if (cs_out.gasPressed and not self.CS.out.gasPressed) or \
-       (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)):
-      events.add(EventName.pedalPressed)
+    if not self.keep_full_time:
+      if (cs_out.gasPressed and not self.CS.out.gasPressed) or \
+        (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)):
+        events.add(EventName.pedalPressed)
 
     # we engage when pcm is active (rising edge)
+    # ACC巡航启用时，启用Openpilot控制。 cs_out = 当前从车辆can解析的状态
     if pcm_enable:
       if cs_out.cruiseState.enabled and not self.CS.out.cruiseState.enabled:
         events.add(EventName.pcmEnable)
       elif not cs_out.cruiseState.enabled:
         events.add(EventName.pcmDisable)
 
+    if self.keep_full_time and  not cs_out.cruiseState.available:
+      events.add(EventName.pcmDisable)
+    
     return events
 
 

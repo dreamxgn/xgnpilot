@@ -144,6 +144,8 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"PandaSignatures", CLEAR_ON_MANAGER_START},
     {"Passive", PERSISTENT},
     {"KeepFullTime", PERSISTENT},
+    {"TurnVisionControl", PERSISTENT},
+    {"IsDebug", PERSISTENT},
     {"PrimeRedirected", PERSISTENT},
     {"PrimeType", PERSISTENT},
     {"RecordFront", PERSISTENT},

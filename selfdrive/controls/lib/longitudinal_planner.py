@@ -6,10 +6,12 @@ from common.numpy_fast import interp
 import cereal.messaging as messaging
 from common.filter_simple import FirstOrderFilter
 from common.realtime import DT_MDL
+from common.params import Params
 from selfdrive.modeld.constants import T_IDXS
 from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.longcontrol import LongCtrlState
 from selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import LongitudinalMpc
+from selfdrive.controls.lib.vision_turn_controller import VisionTurnController
 from selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDXS as T_IDXS_MPC
 from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, CONTROL_N
 from selfdrive.swaglog import cloudlog
@@ -52,6 +54,11 @@ class Planner:
     self.a_desired = init_a
     self.v_desired_filter = FirstOrderFilter(init_v, 2.0, DT_MDL)
 
+    self.vision_turn_controller = VisionTurnController(CP)
+    self.params = Params()
+
+    self.is_vison_speed=self.params.get_bool("TurnVisionControl")
+
     self.v_desired_trajectory = np.zeros(CONTROL_N)
     self.a_desired_trajectory = np.zeros(CONTROL_N)
     self.j_desired_trajectory = np.zeros(CONTROL_N)
@@ -76,6 +83,9 @@ class Planner:
 
     # Prevent divergence, smooth in current v_ego
     self.v_desired_filter.x = max(0.0, self.v_desired_filter.update(v_ego))
+
+    self.vision_turn_controller.update(self.is_vison_speed, v_ego, a_ego, v_cruise, sm)
+      
 
     accel_limits = [A_CRUISE_MIN, get_max_accel(v_ego)]
     accel_limits_turns = limit_accel_in_turns(v_ego, sm['carState'].steeringAngleDeg, accel_limits, self.CP)
@@ -116,6 +126,12 @@ class Planner:
     longitudinalPlan.accels = self.a_desired_trajectory.tolist()
     longitudinalPlan.jerks = self.j_desired_trajectory.tolist()
 
+    longitudinalPlan.visionTurnControllerState = self.vision_turn_controller.state
+    longitudinalPlan.visionTurnSpeed = float(self.vision_turn_controller.v_turn)
+
+    #print(f'TVC: TurnVisionController state: {longitudinalPlan.visionTurnControllerState} visionTurnSpeed {longitudinalPlan.visionTurnSpeed}')
+
+    
     longitudinalPlan.hasLead = sm['radarState'].leadOne.status
     longitudinalPlan.longitudinalPlanSource = self.mpc.source
     longitudinalPlan.fcw = self.fcw

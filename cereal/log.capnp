@@ -828,7 +828,10 @@ struct LongitudinalPlan @0xe00b5b3eba12876c {
   speeds @33 :List(Float32);
   jerks @34 :List(Float32);
 
-  solverExecutionTime @35 :Float32;
+  visionTurnControllerState @35 :VisionTurnControllerState;
+  visionTurnSpeed @36 :Float32;
+
+  solverExecutionTime @37 :Float32;
 
   enum LongitudinalPlanSource {
     cruise @0;
@@ -836,6 +839,13 @@ struct LongitudinalPlan @0xe00b5b3eba12876c {
     lead1 @2;
     lead2 @3;
     e2e @4;
+  }
+
+  enum VisionTurnControllerState {
+    disabled @0; # No predicted substancial turn on vision range or feature disabled.
+    entering @1; # A subsantial turn is predicted ahead, adapting speed to turn confort levels.
+    turning @2; # Actively turning. Managing acceleration to provide a roll on turn feeling.
+    leaving @3; # Road ahead straightens. Start to allow positive acceleration.
   }
 
   # deprecated

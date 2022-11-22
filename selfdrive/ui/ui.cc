@@ -224,13 +224,15 @@ void UIState::updateStatus() {
 UIState::UIState(QObject *parent) : QObject(parent) {
   sm = std::make_unique<SubMaster, const std::initializer_list<const char *>>({
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState", "roadCameraState",
-    "pandaStates", "carParams", "driverMonitoringState", "sensorEvents", "carState", "liveLocationKalman",
+    "pandaStates", "carParams", "driverMonitoringState","longitudinalPlan", "sensorEvents", "carState", "liveLocationKalman",
     "wideRoadCameraState",
   });
 
   Params params;
   wide_camera = Hardware::TICI() ? params.getBool("EnableWideCamera") : false;
   prime_type = std::atoi(params.get("PrimeType").c_str());
+
+  this->scene.show_debug_ui = params.getBool("IsDebug");
 
   // update timer
   timer = new QTimer(this);
