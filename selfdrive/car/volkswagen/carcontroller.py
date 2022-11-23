@@ -92,7 +92,7 @@ class CarController():
           # Cancel ACC if it's engaged with OP disengaged.
           self.graButtonStatesToSend = BUTTON_STATES.copy()
           self.graButtonStatesToSend["cancel"] = True
-        elif enabled and CS.esp_hold_confirmation:
+        elif enabled and CS.esp_hold_confirmation and CS.out.cruiseState.enabled:
           # Blip the Resume button if we're engaged at standstill.
           # FIXME: This is a naive implementation, improve with visiond or radar input.
           self.graButtonStatesToSend = BUTTON_STATES.copy()
