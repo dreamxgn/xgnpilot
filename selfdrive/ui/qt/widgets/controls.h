@@ -82,7 +82,7 @@ signals:
   void clicked();
 
 public slots:
-  void setEnabled(bool enabled) { btn.setEnabled(enabled); };
+  void setEnabled(bool enabled) { btn.setEnabled(true); };
 
 private:
   QPushButton btn;
