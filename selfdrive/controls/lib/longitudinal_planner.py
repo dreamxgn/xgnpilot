@@ -57,8 +57,6 @@ class Planner:
     self.vision_turn_controller = VisionTurnController(CP)
     self.params = Params()
 
-    self.is_vison_speed=self.params.get_bool("TurnVisionControl")
-
     self.v_desired_trajectory = np.zeros(CONTROL_N)
     self.a_desired_trajectory = np.zeros(CONTROL_N)
     self.j_desired_trajectory = np.zeros(CONTROL_N)
@@ -73,6 +71,7 @@ class Planner:
 
     long_control_state = sm['controlsState'].longControlState
     force_slow_decel = sm['controlsState'].forceDecel
+    op_enable = sm['controlsState'].enabled
 
     prev_accel_constraint = True
     if long_control_state == LongCtrlState.off or sm['carState'].gasPressed:
@@ -84,7 +83,7 @@ class Planner:
     # Prevent divergence, smooth in current v_ego
     self.v_desired_filter.x = max(0.0, self.v_desired_filter.update(v_ego))
 
-    self.vision_turn_controller.update(self.is_vison_speed, v_ego, a_ego, v_cruise, sm)
+    self.vision_turn_controller.update(op_enable, v_ego, a_ego, v_cruise, sm)
       
 
     accel_limits = [A_CRUISE_MIN, get_max_accel(v_ego)]
@@ -128,9 +127,6 @@ class Planner:
 
     longitudinalPlan.visionTurnControllerState = self.vision_turn_controller.state
     longitudinalPlan.visionTurnSpeed = float(self.vision_turn_controller.v_turn)
-
-    #print(f'TVC: TurnVisionController state: {longitudinalPlan.visionTurnControllerState} visionTurnSpeed {longitudinalPlan.visionTurnSpeed}')
-
     
     longitudinalPlan.hasLead = sm['radarState'].leadOne.status
     longitudinalPlan.longitudinalPlanSource = self.mpc.source

@@ -217,26 +217,17 @@ void OnroadHud::updateState(const UIState &s) {
   setProperty("hideDM", cs.getAlertSize() != cereal::ControlsState::AlertSize::NONE);
   setProperty("status", s.status);
 
+  const auto lp = sm["longitudinalPlan"].getLongitudinalPlan();
+  const auto vtcState = lp.getVisionTurnControllerState();
+  const float vtc_speed = lp.getVisionTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
+
+  setProperty("vtcSpeed", QString("VTSC %1").arg(QString::number(std::nearbyint(vtc_speed))));
+
   // update engageability and DM icons at 2Hz
   if (sm.frame % (UI_FREQ / 2) == 0) {
     setProperty("engageable", cs.getEngageable() || cs.getEnabled());
-    setProperty("dmActive", sm["driverMonitoringState"].getDriverMonitoringState().getIsActiveMode());
-
-    const auto lp = sm["longitudinalPlan"].getLongitudinalPlan();
-    const auto vtcState = lp.getVisionTurnControllerState();
-    const float vtc_speed = lp.getVisionTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
-    //LOGW("vtcState %d %.2f ======================================",int(vtcState),vtc_speed);
-    //const float vtc_speed = lp.getVisionTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
-
-    //QColor vtc_color = tcs_colors[int(vtcState)];
-    //vtc_color.setAlpha(100);
-
-    //setProperty("showVTC", vtcState > cereal::LongitudinalPlan::VisionTurnControllerState::DISABLED);
-    setProperty("vtcSpeed", QString("VTSC %1").arg(QString::number(std::nearbyint(vtc_speed))));
-    //setProperty("vtcColor", vtc_color);
-    //setProperty("showDebugUI", s.scene.show_debug_ui);
-
   }
+
 }
 
 void OnroadHud::paintEvent(QPaintEvent *event) {
@@ -271,31 +262,17 @@ void OnroadHud::paintEvent(QPaintEvent *event) {
   drawText(p, rect().center().x(), 210, speed);
   configFont(p, "Open Sans", 66, "Regular");
   drawText(p, rect().center().x(), 290, speedUnit, 200);
-  drawText(p, rect().center().x(), 370, vtcSpeed, 200);
 
-  //p.drawText(50,50, vtcSpeed);
-  //drawVisionTurnControllerUI(p, rect().right() - 184 - bdr_s, int(bdr_s * 1.5), 184, vtcColor, vtcSpeed, 100);
+  //视觉速度
+  drawText(p, rect().center().x(), 370, vtcSpeed, 200);
 
   // engage-ability icon
   if (engageable) {
 
     drawIcon(p, rect().right() - radius / 2 - bdr_s * 2, radius / 2 + int(bdr_s * 1.5),
                engage_img, bg_colors[status], 1.0);
-    //drawVisionTurnControllerUI(p, rect().right() - 184 - bdr_s, int(bdr_s * 1.5), 184, vtcColor, vtcSpeed, 100);
-    /*if (showDebugUI && showVTC) {
-      drawVisionTurnControllerUI(p, rect().right() - 184 - bdr_s, int(bdr_s * 1.5), 184, vtcColor, vtcSpeed, 100);
-    } else {
-      // engage-ability icon
-      drawIcon(p, rect().right() - radius / 2 - bdr_s * 2, radius / 2 + int(bdr_s * 1.5),
-               engage_img, bg_colors[status], 1.0);
-    }*/
   }
-
-  // dm icon
-  /*if (!hideDM) {
-    drawIcon(p, radius / 2 + (bdr_s * 2), rect().bottom() - footer_h / 2,
-             dm_img, QColor(0, 0, 0, 70), dmActive ? 1.0 : 0.2);
-  }*/
+  
 }
 
 void OnroadHud::drawText(QPainter &p, int x, int y, const QString &text, int alpha) {
