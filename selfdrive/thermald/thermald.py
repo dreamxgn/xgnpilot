@@ -306,10 +306,11 @@ def thermald_thread(end_event, hw_queue):
       max(msg.deviceState.gpuTempC),
     ]
 
-    max_comp_temp = temp_filter.update(temp_sources)
+    max_comp_temp = temp_filter.update(max(temp_sources))
 
     temp_sources.append(max(msg.deviceState.pmicTempC))
-    all_comp_temp = temp_filter.update(max(temp_sources))
+
+    all_comp_temp = all_temp_filter.update(max(temp_sources))
 
     msg.deviceState.maxCompTemp=int(all_comp_temp)
 
