@@ -227,6 +227,7 @@ def thermald_thread(end_event, hw_queue):
 
   current_filter = FirstOrderFilter(0., CURRENT_TAU, DT_TRML)
   temp_filter = FirstOrderFilter(0., TEMP_TAU, DT_TRML)
+  all_temp_filter = FirstOrderFilter(0., TEMP_TAU, DT_TRML)
   should_start_prev = False
   in_car = False
   handle_fan = None
@@ -299,11 +300,18 @@ def thermald_thread(end_event, hw_queue):
     msg.deviceState.usbOnline = HARDWARE.get_usb_present()
     current_filter.update(msg.deviceState.batteryCurrent / 1e6)
 
-    max_comp_temp = temp_filter.update(
-      max(max(msg.deviceState.cpuTempC), msg.deviceState.memoryTempC, max(msg.deviceState.gpuTempC))
-    )
+    temp_sources = [
+      msg.deviceState.memoryTempC,
+      max(msg.deviceState.cpuTempC),
+      max(msg.deviceState.gpuTempC),
+    ]
 
-    msg.deviceState.maxCompTemp=int(max_comp_temp)
+    max_comp_temp = temp_filter.update(temp_sources)
+
+    temp_sources.append(max(msg.deviceState.pmicTempC))
+    all_comp_temp = temp_filter.update(max(temp_sources))
+
+    msg.deviceState.maxCompTemp=int(all_comp_temp)
 
     if handle_fan is not None:
       fan_speed = handle_fan(controller, max_comp_temp, fan_speed, onroad_conditions["ignition"])
@@ -317,9 +325,9 @@ def thermald_thread(end_event, hw_queue):
     else:
       current_band = THERMAL_BANDS[thermal_status]
       band_idx = list(THERMAL_BANDS.keys()).index(thermal_status)
-      if current_band.min_temp is not None and max_comp_temp < current_band.min_temp:
+      if current_band.min_temp is not None and all_comp_temp < current_band.min_temp:
         thermal_status = list(THERMAL_BANDS.keys())[band_idx - 1]
-      elif current_band.max_temp is not None and max_comp_temp > current_band.max_temp:
+      elif current_band.max_temp is not None and all_comp_temp > current_band.max_temp:
         thermal_status = list(THERMAL_BANDS.keys())[band_idx + 1]
 
     # **** starting logic ****
