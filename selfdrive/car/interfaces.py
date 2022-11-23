@@ -158,21 +158,19 @@ class CarInterfaceBase(ABC):
 
     # Disable on rising edge of gas or brake. Also disable on brake when speed > 0.
     # 刹车踩下禁用控制
-    if not self.keep_full_time:
-      if (cs_out.gasPressed and not self.CS.out.gasPressed) or \
-        (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)):
-        events.add(EventName.pedalPressed)
+    #if not self.keep_full_time:
+    #  if (cs_out.gasPressed and not self.CS.out.gasPressed) or \
+    #    (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)):
+    #    events.add(EventName.pedalPressed)
 
     # we engage when pcm is active (rising edge)
     # ACC巡航启用时，启用Openpilot控制。 cs_out = 当前从车辆can解析的状态
     if pcm_enable:
       if cs_out.cruiseState.enabled and not self.CS.out.cruiseState.enabled:
         events.add(EventName.pcmEnable)
-      elif not cs_out.cruiseState.enabled:
-        events.add(EventName.pcmDisable)
-
-    if self.keep_full_time and  not cs_out.cruiseState.available:
-      events.add(EventName.pcmDisable)
+    
+    #if self.keep_full_time and  not cs_out.cruiseState.available:
+    #  events.add(EventName.pcmDisable)
     
     return events
 

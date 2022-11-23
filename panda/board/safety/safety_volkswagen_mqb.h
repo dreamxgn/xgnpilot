@@ -120,13 +120,31 @@ static int volkswagen_mqb_rx_hook(CANPacket_t *to_push) {
     // Signal: TSK_06.TSK_Status
     if (addr == MSG_TSK_06) {
       int acc_status = (GET_BYTE(to_push, 3) & 0x7U);
+
+      //巡航启用状态
       int cruise_engaged = ((acc_status == 3) || (acc_status == 4) || (acc_status == 5)) ? 1 : 0;
+
+      acc_main_on = cruise_engaged || (acc_status == 2);
+
+
       if (cruise_engaged && !cruise_engaged_prev) {
         controls_allowed = 1;
       }
-      if (!cruise_engaged) {
+
+      /*if (!cruise_engaged) {
+        controls_allowed = 0;
+      }*/
+
+      //巡航开关打开时启用控制
+      if(acc_main_on){
+        controls_allowed = 1;
+      }
+
+      //巡航开关关闭时 停用控制
+      if(!acc_main_on){
         controls_allowed = 0;
       }
+
       cruise_engaged_prev = cruise_engaged;
     }
 
