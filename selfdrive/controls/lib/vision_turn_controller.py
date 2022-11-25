@@ -142,11 +142,11 @@ class VisionTurnController():
     self._v_overshoot_distance = 200.
     self._lat_acc_overshoot_ahead = False
 
-  def _update_params(self):
-    time = sec_since_boot()
-    if time > self._last_params_update + 5.0:
-      self._is_enabled = self._params.get_bool("TurnVisionControl")
-      self._last_params_update = time
+  #def _update_params(self):
+  #  time = sec_since_boot()
+  #  if time > self._last_params_update + 5.0:
+  #    self._is_enabled = self._params.get_bool("TurnVisionControl")
+  #    self._last_params_update = time
 
   def _update_calculations(self, sm):
     # Get path polynomial aproximation for curvature estimation from model data.
@@ -286,7 +286,7 @@ class VisionTurnController():
     self._a_ego = a_ego
     self._v_cruise_setpoint = v_cruise_setpoint
 
-    self._update_params()
+    #self._update_params()
     self._update_calculations(sm)
     self._state_transition()
     self._update_solution()

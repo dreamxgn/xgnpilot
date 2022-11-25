@@ -111,7 +111,7 @@ def update_v_cruise_speed(v_cruise_kph, buttonEvents, button_timers, enabled, me
         break
 
   if button_type:
-    v_cruise_delta = v_cruise_delta * (5 if long_press else 1)
+    v_cruise_delta = v_cruise_delta * (5)
     if long_press and v_cruise_kph % v_cruise_delta != 0: # partial interval
       v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](v_cruise_kph / v_cruise_delta) * v_cruise_delta
     else:
