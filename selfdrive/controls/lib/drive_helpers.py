@@ -87,6 +87,41 @@ def update_v_cruise(v_cruise_kph, buttonEvents, button_timers, enabled, metric):
   return v_cruise_kph
 
 
+def update_v_cruise_speed(v_cruise_kph, buttonEvents, button_timers, enabled, metric):
+
+  if not enabled:
+    return v_cruise_kph
+
+  long_press = False
+  button_type = None
+
+  v_cruise_delta = 1 if metric else 1.6
+
+  for b in buttonEvents:
+    if b.type.raw in button_timers and not b.pressed:
+      if button_timers[b.type.raw] > CRUISE_LONG_PRESS:
+        return v_cruise_kph # end long press
+      button_type = b.type.raw
+      break
+  else:
+    for k in button_timers.keys():
+      if button_timers[k] and button_timers[k] % CRUISE_LONG_PRESS == 0:
+        button_type = k
+        long_press = True
+        break
+
+  if button_type:
+    v_cruise_delta = v_cruise_delta * (5 if long_press else 1)
+    if long_press and v_cruise_kph % v_cruise_delta != 0: # partial interval
+      v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](v_cruise_kph / v_cruise_delta) * v_cruise_delta
+    else:
+      v_cruise_kph += v_cruise_delta * CRUISE_INTERVAL_SIGN[button_type]
+
+    v_cruise_kph = clip(round(v_cruise_kph, 1), V_CRUISE_MIN, V_CRUISE_MAX)
+      
+  return v_cruise_kph
+
+
 def initialize_v_cruise(v_ego, buttonEvents, v_cruise_last):
   for b in buttonEvents:
     # 250kph or above probably means we never had a set speed
