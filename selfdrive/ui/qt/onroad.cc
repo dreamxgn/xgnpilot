@@ -343,8 +343,8 @@ void NvgWindow::drawLaneLines(QPainter &painter, const UIScene &scene) {
 
   // paint path
   QLinearGradient bg(0, height(), 0, height() / 4);
-  bg.setColorAt(0, scene.use_lanelines ? redColor() : QColor(255, 255, 255));
-  bg.setColorAt(1, scene.use_lanelines ? redColor(0) : QColor(255, 255, 255, 0));
+  bg.setColorAt(0, !scene.use_lanelines ? redColor() : QColor(255, 255, 255));
+  bg.setColorAt(1, !scene.use_lanelines ? redColor(0) : QColor(255, 255, 255, 0));
   painter.setBrush(bg);
   painter.drawPolygon(scene.track_vertices.v, scene.track_vertices.cnt);
 }
