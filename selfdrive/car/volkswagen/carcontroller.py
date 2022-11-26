@@ -20,7 +20,7 @@ class CarController():
     self.graButtonStatesToSend = None
     self.graMsgSentCount = 0
     self.graMsgStartFramePrev = 0
-    self.graMsgBusCounterPrev = 0
+    self.graMsgBusCounterPrev = None
 
     self.params = Params()
     self.timer = 0
@@ -67,10 +67,14 @@ class CarController():
 
     # **** ACC Button Controls ********************************************** #
     if CS.CP.pcmCruise:
-      if not self.acc_std_ctl(enabled=enabled,CS=CS,frame=frame,can_sends=can_sends,ext_bus=ext_bus):
-        self.acc_vison_speed_ctl(enabled=enabled,CS=CS,frame=frame,can_sends=can_sends,ext_bus=ext_bus)
+      # ***** cancel acc 、stop_and_go ***************************** #
+      self.acc_std_ctl(enabled=enabled,CS=CS,frame=frame,can_sends=can_sends,ext_bus=ext_bus)
 
-  
+      # ***** vison speed control ***************************** #
+      #if not self.acc_std_ctl(enabled=enabled,CS=CS,frame=frame,can_sends=can_sends,ext_bus=ext_bus):
+      #self.acc_vison_speed_ctl(enabled=enabled,CS=CS,frame=frame,can_sends=can_sends,ext_bus=ext_bus)
+
+    self.graMsgBusCounterPrev = CS.graMsgBusCounter
     new_actuators = actuators.copy()
     new_actuators.steer = self.apply_steer_last / P.STEER_MAX
 
@@ -132,30 +136,21 @@ class CarController():
   def acc_std_ctl(self,enabled,CS,frame,can_sends,ext_bus):
     cancel_acc = (not enabled and CS.out.cruiseState.enabled)
     stop_ang_go = enabled and CS.out.cruiseState.enabled and CS.esp_hold_confirmation
+    send_ready = CS.graMsgBusCounter != self.graMsgBusCounterPrev
 
-    if cancel_acc or stop_ang_go:
-      if frame > self.graMsgStartFramePrev + P.GRA_VBP_STEP:
-        if cancel_acc:
-          self.graButtonStatesToSend = BUTTON_STATES.copy()
-          self.graButtonStatesToSend["cancel"] = True
-        elif stop_ang_go:
-          self.graButtonStatesToSend = BUTTON_STATES.copy()
-          self.graButtonStatesToSend["resumeCruise"] = True
+    if cancel_acc:
+      self.graButtonStatesToSend = BUTTON_STATES.copy()
+      self.graButtonStatesToSend["cancel"] = True
 
-      if CS.graMsgBusCounter != self.graMsgBusCounterPrev:
-        self.graMsgBusCounterPrev = CS.graMsgBusCounter
-        if self.graButtonStatesToSend is not None:
-          if self.graMsgSentCount == 0:
-            self.graMsgStartFramePrev = frame
-          idx = (CS.graMsgBusCounter + 1) % 16
-          can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, self.graButtonStatesToSend, CS, idx))
-          self.graMsgSentCount += 1
-          if self.graMsgSentCount >= P.GRA_VBP_COUNT:
-            self.graButtonStatesToSend = None
-            self.graMsgSentCount = 0
-      return True
-    else:
-      return False
+    if stop_ang_go and (frame % P.GRA_VBP_COUNT == 0):
+      self.graButtonStatesToSend = BUTTON_STATES.copy()
+      self.graButtonStatesToSend["resumeCruise"] = True
+
+    if send_ready and (cancel_acc or stop_ang_go) and self.graButtonStatesToSend is not None:
+      idx = (CS.graMsgBusCounter + 1) % 16
+      can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, 
+      self.graButtonStatesToSend, CS, idx))
+  
   def acc_vison_speed_ctl(self,enabled,CS,frame,can_sends,ext_bus):
     if not CS.esp_hold_confirmation and CS.out.cruiseState.enabled and not CS.out.gasPressed:
       if frame > self.graMsgStartFramePrev:
@@ -169,21 +164,20 @@ class CarController():
               self.graButtonStatesToSend = BUTTON_STATES.copy()
               self.graButtonStatesToSend["setCruise"] = True
 
-      if CS.graMsgBusCounter != self.graMsgBusCounterPrev:
-        self.graMsgBusCounterPrev = CS.graMsgBusCounter
-        if self.graButtonStatesToSend is not None:
-          if self.graMsgSentCount == 0:
-            self.graMsgStartFramePrev = frame
-          idx = (CS.graMsgBusCounter + 1) % 16
-          can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, self.graButtonStatesToSend, CS, idx))
-          self.graMsgSentCount += 1
-          if self.graMsgSentCount >= 3:
-            self.graButtonStatesToSend = None
-            self.graMsgSentCount = 0
+    if CS.graMsgBusCounter != self.graMsgBusCounterPrev:
+      self.graMsgBusCounterPrev = CS.graMsgBusCounter
+      if self.graButtonStatesToSend is not None:
+        if self.graMsgSentCount == 0:
+          self.graMsgStartFramePrev = frame
+        idx = (CS.graMsgBusCounter + 1) % 16
+        can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, self.graButtonStatesToSend, CS, idx))
+        self.graMsgSentCount += 1
+        if self.graMsgSentCount >= P.GRA_VBP_COUNT:
+          self.graButtonStatesToSend = None
+          self.graMsgSentCount = 0
       return True
     else:
       return False
-
 
   def get_cruise_buttons_status(self, CS):
     if not CS.cruiseState.enabled or CS.buttonStates["accelCruise"] or CS.buttonStates["decelCruise"] or CS.buttonStates["setCruise"] or CS.buttonStates["resumeCruise"]:
