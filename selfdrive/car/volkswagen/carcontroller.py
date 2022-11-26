@@ -71,8 +71,7 @@ class CarController():
       self.acc_std_ctl(enabled=enabled,CS=CS,frame=frame,can_sends=can_sends,ext_bus=ext_bus)
 
       # ***** vison speed control ***************************** #
-      #if not self.acc_std_ctl(enabled=enabled,CS=CS,frame=frame,can_sends=can_sends,ext_bus=ext_bus):
-      #self.acc_vison_speed_ctl(enabled=enabled,CS=CS,frame=frame,can_sends=can_sends,ext_bus=ext_bus)
+      self.acc_vison_speed_ctl(enabled=enabled,CS=CS,frame=frame,can_sends=can_sends,ext_bus=ext_bus)
 
     self.graMsgBusCounterPrev = CS.graMsgBusCounter
     new_actuators = actuators.copy()
@@ -152,32 +151,21 @@ class CarController():
       self.graButtonStatesToSend, CS, idx))
   
   def acc_vison_speed_ctl(self,enabled,CS,frame,can_sends,ext_bus):
-    if not CS.esp_hold_confirmation and CS.out.cruiseState.enabled and not CS.out.gasPressed:
-      if frame > self.graMsgStartFramePrev:
-        if CS.out.cruiseState.enabled:
-          cruise_button = self.get_cruise_buttons(CS,self.v_cruise_kph_prev)
-          if cruise_button is not None and self.graMsgSentCount == 0:
-            if cruise_button == 1:
-              self.graButtonStatesToSend = BUTTON_STATES.copy()
-              self.graButtonStatesToSend["resumeCruise"] = True
-            elif cruise_button == 2:
-              self.graButtonStatesToSend = BUTTON_STATES.copy()
-              self.graButtonStatesToSend["setCruise"] = True
-
-    if CS.graMsgBusCounter != self.graMsgBusCounterPrev:
-      self.graMsgBusCounterPrev = CS.graMsgBusCounter
-      if self.graButtonStatesToSend is not None:
-        if self.graMsgSentCount == 0:
-          self.graMsgStartFramePrev = frame
+    runing = (not CS.esp_hold_confirmation) and CS.out.cruiseState.enabled \
+              and (not CS.out.gasPressed) and CS.out.cruiseState.enabled
+    if runing and self.is_vison_control:
+      cruise_button = self.get_cruise_buttons(CS,self.v_cruise_kph_prev)
+      if (cruise_button is not None) and (frame % P.GRA_VBP_COUNT == 0):
+        if cruise_button == 1:
+          self.graButtonStatesToSend = BUTTON_STATES.copy()
+          self.graButtonStatesToSend["resumeCruise"] = True
+        elif cruise_button == 2:
+          self.graButtonStatesToSend = BUTTON_STATES.copy()
+          self.graButtonStatesToSend["setCruise"] = True
+        
         idx = (CS.graMsgBusCounter + 1) % 16
-        can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, self.graButtonStatesToSend, CS, idx))
-        self.graMsgSentCount += 1
-        if self.graMsgSentCount >= P.GRA_VBP_COUNT:
-          self.graButtonStatesToSend = None
-          self.graMsgSentCount = 0
-      return True
-    else:
-      return False
+        can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, \
+                        self.graButtonStatesToSend, CS, idx))
 
   def get_cruise_buttons_status(self, CS):
     if not CS.cruiseState.enabled or CS.buttonStates["accelCruise"] or CS.buttonStates["decelCruise"] or CS.buttonStates["setCruise"] or CS.buttonStates["resumeCruise"]:
@@ -200,7 +188,6 @@ class CarController():
   def reset_button(self):
     if self.button_type != 3:
       self.button_type = 0
-
 
   def type_default(self):
     self.button_type = 0
