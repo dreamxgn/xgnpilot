@@ -37,7 +37,7 @@ class LateralPlanner:
     self.lat_mpc.reset(x0=self.x0)
   
   def get_dynamic_lane_profile(self):
-    if self.lane_change_state == LaneChangeState.off:
+    if self.DH.lane_change_state == LaneChangeState.off:
       if (self.LP.lll_prob + self.LP.rll_prob)/2 < 0.3:
         self.dynamic_lane_profile_status_buffer = True
       if (self.LP.lll_prob + self.LP.rll_prob)/2 > 0.5:
