@@ -54,12 +54,6 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "../assets/offroad/icon_metric.png",
     },
     {
-      "EndToEndToggle",
-      "禁用车道线（Alpha）",
-      "在这种模式下，openpilot 将忽略车道线，只按照它认为人类的方式驾驶。",
-      "../assets/offroad/icon_road.png",
-    },
-    {
       "KeepFullTime",
       "全时保持",
       "ACC断开时,Openpilot继续保持横向控制。",

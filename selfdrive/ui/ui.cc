@@ -188,7 +188,12 @@ static void update_state(UIState *s) {
 
     scene.light_sensor = std::clamp<float>(1.0 - (ev / max_ev), 0.0, 1.0);
   }
+
   scene.started = sm["deviceState"].getDeviceState().getStarted() && scene.ignition;
+  if (sm.updated("lateralPlan")) {
+    auto data = sm["lateralPlan"].getLateralPlan();
+    scene.use_lanelines = data.getUseLaneLines();
+  }
 }
 
 void ui_update_params(UIState *s) {
@@ -213,7 +218,7 @@ void UIState::updateStatus() {
     if (scene.started) {
       status = STATUS_DISENGAGED;
       scene.started_frame = sm->frame;
-      scene.end_to_end = Params().getBool("EndToEndToggle");
+      //scene.end_to_end = Params().getBool("EndToEndToggle");
       wide_camera = Hardware::TICI() ? Params().getBool("EnableWideCamera") : false;
     }
     started_prev = scene.started;
@@ -224,7 +229,7 @@ void UIState::updateStatus() {
 UIState::UIState(QObject *parent) : QObject(parent) {
   sm = std::make_unique<SubMaster, const std::initializer_list<const char *>>({
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState", "roadCameraState",
-    "pandaStates", "carParams", "driverMonitoringState","longitudinalPlan", "sensorEvents", "carState", "liveLocationKalman",
+    "pandaStates", "carParams", "lateralPlan","driverMonitoringState","longitudinalPlan", "sensorEvents", "carState", "liveLocationKalman",
     "wideRoadCameraState",
   });
 
