@@ -132,7 +132,7 @@ def manager_thread() -> None:
   ignore.append("uploader")
   ignore.append("dmonitoringmodeld")
   ignore.append("logcatd")
-  #ignore.append("loggerd")
+  ignore.append("loggerd")
   ignore.append("navd")
   ignore.append("deleter")
   ignore.append("dmonitoringd")
