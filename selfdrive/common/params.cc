@@ -145,6 +145,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"Passive", PERSISTENT},
     {"KeepFullTime", PERSISTENT},
     {"TurnVisionControl", PERSISTENT},
+    {"OnroadLog", CLEAR_ON_MANAGER_START | CLEAR_ON_IGNITION_OFF},
     {"IsDebug", PERSISTENT},
     {"PrimeRedirected", PERSISTENT},
     {"PrimeType", PERSISTENT},
