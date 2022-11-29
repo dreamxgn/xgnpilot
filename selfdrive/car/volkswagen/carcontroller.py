@@ -132,6 +132,7 @@ class CarController():
                                                             left_lane_depart, right_lane_depart))
 
   def acc_std_ctl(self,enabled,CS,frame,can_sends,ext_bus):
+    
     cancel_acc = (not enabled and CS.out.cruiseState.enabled)
     stop_ang_go = enabled and CS.out.cruiseState.enabled and CS.esp_hold_confirmation
     send_ready = CS.graMsgBusCounter != self.graMsgBusCounterPrev
@@ -140,7 +141,7 @@ class CarController():
       self.graButtonStatesToSend = BUTTON_STATES.copy()
       self.graButtonStatesToSend["cancel"] = True
 
-    if stop_ang_go and (frame % P.GRA_VBP_COUNT == 0):
+    if stop_ang_go and (frame % 6 == 0):
       self.graButtonStatesToSend = BUTTON_STATES.copy()
       self.graButtonStatesToSend["resumeCruise"] = True
 
