@@ -71,10 +71,11 @@ class CarController():
       self.acc_std_ctl(enabled=enabled,CS=CS,frame=frame,can_sends=can_sends,ext_bus=ext_bus)
 
       # ***** vison speed control ***************************** #
-      self.acc_vison_speed_ctl(enabled=enabled,CS=CS,frame=frame,can_sends=can_sends,ext_bus=ext_bus)
+      #self.acc_vison_speed_ctl(enabled=enabled,CS=CS,frame=frame,can_sends=can_sends,ext_bus=ext_bus)
 
     new_actuators = actuators.copy()
     new_actuators.steer = self.apply_steer_last / P.STEER_MAX
+    self.graMsgBusCounterPrev = CS.graMsgBusCounter
 
     return new_actuators, can_sends
 
@@ -135,18 +136,17 @@ class CarController():
     
     cancel_acc = (not enabled and CS.out.cruiseState.enabled)
     stop_ang_go = enabled and CS.out.cruiseState.enabled and CS.esp_hold_confirmation
-    send_ready = CS.graMsgBusCounter != self.graMsgBusCounterPrev
+    gra_sendReady = CS.graMsgBusCounter != self.graMsgBusCounterPrev
 
     if cancel_acc:
       self.graButtonStatesToSend = BUTTON_STATES.copy()
       self.graButtonStatesToSend["cancel"] = True
 
-    if stop_ang_go and (frame % 6 == 0):
+    if stop_ang_go:
       self.graButtonStatesToSend = BUTTON_STATES.copy()
       self.graButtonStatesToSend["resumeCruise"] = True
 
-    if send_ready and (cancel_acc or stop_ang_go) and self.graButtonStatesToSend is not None:
-      self.graMsgBusCounterPrev = CS.graMsgBusCounter
+    if gra_sendReady and (cancel_acc or stop_ang_go) and self.graButtonStatesToSend is not None:
       idx = (CS.graMsgBusCounter + 1) % 16
       can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, 
       self.graButtonStatesToSend, CS, idx))
