@@ -40,6 +40,7 @@ def manager_init() -> None:
     ("CompletedTrainingVersion", "0"),
     ("HasAcceptedTerms", "0"),
     ("OpenpilotEnabledToggle", "1"),
+    ("OnroadLog", "0")
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))
@@ -144,10 +145,20 @@ def manager_thread() -> None:
   started_prev = False
   sm = messaging.SubMaster(['deviceState'])
   pm = messaging.PubMaster(['managerState'])
+  interval = 0
+  onroadLog = False
 
   while True:
     sm.update()
     not_run = ignore[:]
+
+    interval+=1
+    if interval % 50 == 0:
+      onroadLog = params.get_bool("OnroadLog")
+      interval = 0
+
+    if onroadLog:
+      not_run = [x for x in ignore if x !="loggerd"]
 
     started = sm['deviceState'].started
     driverview = params.get_bool("IsDriverViewEnabled")

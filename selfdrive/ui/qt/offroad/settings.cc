@@ -71,6 +71,12 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "调试模式下将显示系统参数值",
       "../assets/offroad/icon_road.png",
     },
+    {
+      "OnroadLog",
+      "记录行驶数据",
+      "记录行驶数据",
+      "../assets/offroad/icon_road.png",
+    },
 #ifdef ENABLE_MAPS
     {
       "NavSettingTime24h",
