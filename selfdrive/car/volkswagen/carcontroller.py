@@ -49,7 +49,7 @@ class CarController():
     """ Controls thread """
 
     self.sm.update(0)
-    self.v_cruise_kph_prev = self.sm['controlsState'].vCruise
+    self.v_cruise_kph_prev = 40 #self.sm['controlsState'].vCruise
 
     can_sends = []
 
@@ -157,7 +157,7 @@ class CarController():
     send_ready = CS.graMsgBusCounter != self.graMsgBusCounterPrev
     if runing and self.is_vison_control:
       cruise_button = self.get_cruise_buttons(CS,self.v_cruise_kph_prev)
-      if (cruise_button is not None) and (frame % P.GRA_VBP_COUNT == 0) and send_ready:
+      if (cruise_button is not None) and (frame % 2 == 0) and send_ready:
         if cruise_button == 1:
           self.graButtonStatesToSend = BUTTON_STATES.copy()
           self.graButtonStatesToSend["resumeCruise"] = True
