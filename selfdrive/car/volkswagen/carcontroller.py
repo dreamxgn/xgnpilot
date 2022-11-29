@@ -68,7 +68,23 @@ class CarController():
     # **** ACC Button Controls ********************************************** #
     if CS.CP.pcmCruise:
       # ***** cancel acc 、stop_and_go ***************************** #
-      self.acc_std_ctl(enabled=enabled,CS=CS,frame=frame,can_sends=can_sends,ext_bus=ext_bus)
+      cancel_acc = (not enabled and CS.out.cruiseState.enabled)
+      stop_ang_go = enabled and CS.out.cruiseState.enabled and CS.esp_hold_confirmation
+      gra_sendReady = CS.graMsgBusCounter != self.graMsgBusCounterPrev
+
+      if (cancel_acc or stop_ang_go):
+        if cancel_acc:
+          self.graButtonStatesToSend = BUTTON_STATES.copy()
+          self.graButtonStatesToSend["cancel"] = True
+
+        if stop_ang_go:
+          self.graButtonStatesToSend = BUTTON_STATES.copy()
+          self.graButtonStatesToSend["resumeCruise"] = True
+
+        if gra_sendReady and (cancel_acc or stop_ang_go) and self.graButtonStatesToSend is not None:
+          idx = (CS.graMsgBusCounter + 1) % 16
+          can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, 
+          self.graButtonStatesToSend, CS, idx))
 
       # ***** vison speed control ***************************** #
       #self.acc_vison_speed_ctl(enabled=enabled,CS=CS,frame=frame,can_sends=can_sends,ext_bus=ext_bus)
@@ -132,12 +148,8 @@ class CarController():
                                                             right_lane_visible, CS.ldw_stock_values,
                                                             left_lane_depart, right_lane_depart))
 
-  def acc_std_ctl(self,enabled,CS,frame,can_sends,ext_bus):
+  def acc_std_ctl(self,enabled,CS,frame,can_sends,ext_bus,cancel_acc,stop_ang_go):
     
-    cancel_acc = (not enabled and CS.out.cruiseState.enabled)
-    stop_ang_go = enabled and CS.out.cruiseState.enabled and CS.esp_hold_confirmation
-    gra_sendReady = CS.graMsgBusCounter != self.graMsgBusCounterPrev
-
     if cancel_acc:
       self.graButtonStatesToSend = BUTTON_STATES.copy()
       self.graButtonStatesToSend["cancel"] = True
