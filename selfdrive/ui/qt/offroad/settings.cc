@@ -60,18 +60,6 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "../assets/offroad/icon_road.png",
     },
     {
-      "TurnVisionControl",
-      "基于视觉速度控制",
-      "基于视觉模型来控制车速",
-      "../assets/offroad/icon_road.png",
-    },
-    {
-      "IsDebug",
-      "调试模式",
-      "调试模式下将显示系统参数值",
-      "../assets/offroad/icon_road.png",
-    },
-    {
       "OnroadLog",
       "记录行驶数据",
       "记录行驶数据",
