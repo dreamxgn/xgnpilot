@@ -56,46 +56,6 @@ class CarController():
     # **** Steering Controls ************************************************ #
 
     if frame % P.HCA_STEP == 0:
-      self.steer_ctl(c=c,CS=CS,actuators=actuators,frame=frame,can_sends=can_sends)
-
-    # **** HUD Controls ***************************************************** #
-
-    if frame % P.LDW_STEP == 0:
-      self.hud_ctl(visual_alert=visual_alert,can_sends=can_sends,enabled=enabled,CS=CS,
-                  left_lane_visible=left_lane_visible,right_lane_visible=right_lane_visible,
-                  left_lane_depart=left_lane_depart,right_lane_depart=right_lane_depart)
-
-    # **** ACC Button Controls ********************************************** #
-    if CS.CP.pcmCruise:
-      # ***** cancel acc 、stop_and_go ***************************** #
-      cancel_acc = (not enabled and CS.out.cruiseState.enabled)
-      stop_ang_go = enabled and CS.out.cruiseState.enabled and CS.esp_hold_confirmation
-      gra_sendReady = CS.graMsgBusCounter != self.graMsgBusCounterPrev
-
-      if (cancel_acc or stop_ang_go):
-        if cancel_acc:
-          self.graButtonStatesToSend = BUTTON_STATES.copy()
-          self.graButtonStatesToSend["cancel"] = True
-
-        if stop_ang_go:
-          self.graButtonStatesToSend = BUTTON_STATES.copy()
-          self.graButtonStatesToSend["resumeCruise"] = True
-
-        if gra_sendReady and (cancel_acc or stop_ang_go) and self.graButtonStatesToSend is not None:
-          idx = (CS.graMsgBusCounter + 1) % 16
-          can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, 
-          self.graButtonStatesToSend, CS, idx))
-
-      # ***** vison speed control ***************************** #
-      #self.acc_vison_speed_ctl(enabled=enabled,CS=CS,frame=frame,can_sends=can_sends,ext_bus=ext_bus)
-
-    new_actuators = actuators.copy()
-    new_actuators.steer = self.apply_steer_last / P.STEER_MAX
-    self.graMsgBusCounterPrev = CS.graMsgBusCounter
-
-    return new_actuators, can_sends
-
-  def steer_ctl(self,c,CS,actuators,frame,can_sends):
       # Logic to avoid HCA state 4 "refused":
       #   * Don't steer unless HCA is in state 3 "ready" or 5 "active"
       #   * Don't steer at standstill
@@ -136,8 +96,9 @@ class CarController():
       can_sends.append(volkswagencan.create_mqb_steering_control(self.packer_pt, CANBUS.pt, apply_steer,
                                                                  idx, hcaEnabled))
 
-  def hud_ctl(self,visual_alert,can_sends,enabled,CS,left_lane_visible,right_lane_visible,
-              left_lane_depart, right_lane_depart):
+    # **** HUD Controls ***************************************************** #
+
+    if frame % P.LDW_STEP == 0:
       if visual_alert in (VisualAlert.steerRequired, VisualAlert.ldw):
         hud_alert = MQB_LDW_MESSAGES["laneAssistTakeOverSilent"]
       else:
@@ -147,133 +108,35 @@ class CarController():
                                                             CS.out.steeringPressed, hud_alert, left_lane_visible,
                                                             right_lane_visible, CS.ldw_stock_values,
                                                             left_lane_depart, right_lane_depart))
-
-  def acc_std_ctl(self,enabled,CS,frame,can_sends,ext_bus,cancel_acc,stop_ang_go):
-    
-    if cancel_acc:
-      self.graButtonStatesToSend = BUTTON_STATES.copy()
-      self.graButtonStatesToSend["cancel"] = True
-
-    if stop_ang_go:
-      self.graButtonStatesToSend = BUTTON_STATES.copy()
-      self.graButtonStatesToSend["resumeCruise"] = True
-
-    if gra_sendReady and (cancel_acc or stop_ang_go) and self.graButtonStatesToSend is not None:
-      idx = (CS.graMsgBusCounter + 1) % 16
-      can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, 
-      self.graButtonStatesToSend, CS, idx))
-  
-  def acc_vison_speed_ctl(self,enabled,CS,frame,can_sends,ext_bus):
-    runing = (not CS.esp_hold_confirmation) and CS.out.cruiseState.enabled \
-              and (not CS.out.gasPressed) and CS.out.cruiseState.enabled
-    send_ready = CS.graMsgBusCounter != self.graMsgBusCounterPrev
-    if runing and self.is_vison_control:
-      cruise_button = self.get_cruise_buttons(CS,self.v_cruise_kph_prev)
-      if (cruise_button is not None) and (frame % 2 == 0) and send_ready:
-        if cruise_button == 1:
+    # **** ACC Button Controls ********************************************** #
+    if CS.CP.pcmCruise:
+      if frame > self.graMsgStartFramePrev + P.GRA_VBP_STEP:
+        if not enabled and CS.out.cruiseState.enabled:
+          # Cancel ACC if it's engaged with OP disengaged.
+          self.graButtonStatesToSend = BUTTON_STATES.copy()
+          self.graButtonStatesToSend["cancel"] = True
+        elif enabled and CS.esp_hold_confirmation and CS.out.cruiseState.enabled:
+          # Blip the Resume button if we're engaged at standstill.
+          # FIXME: This is a naive implementation, improve with visiond or radar input.
           self.graButtonStatesToSend = BUTTON_STATES.copy()
           self.graButtonStatesToSend["resumeCruise"] = True
-        elif cruise_button == 2:
-          self.graButtonStatesToSend = BUTTON_STATES.copy()
-          self.graButtonStatesToSend["setCruise"] = True
+
+      if CS.graMsgBusCounter != self.graMsgBusCounterPrev:
         self.graMsgBusCounterPrev = CS.graMsgBusCounter
-        idx = (CS.graMsgBusCounter + 1) % 16
-        can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, \
-                        self.graButtonStatesToSend, CS, idx))
+        if self.graButtonStatesToSend is not None:
+          if self.graMsgSentCount == 0:
+            self.graMsgStartFramePrev = frame
+          idx = (CS.graMsgBusCounter + 1) % 16
+          can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, self.graButtonStatesToSend, CS, idx))
+          self.graMsgSentCount += 1
+          if self.graMsgSentCount >= P.GRA_VBP_COUNT:
+            self.graButtonStatesToSend = None
+            self.graMsgSentCount = 0
 
-  def get_cruise_buttons_status(self, CS):
-    if not CS.cruiseState.enabled or CS.buttonStates["accelCruise"] or CS.buttonStates["decelCruise"] or CS.buttonStates["setCruise"] or CS.buttonStates["resumeCruise"]:
-      self.timer = 80
-    elif self.timer:
-      self.timer -= 1
-    else:
-      return 1
-    return 0
+      # ***** vison speed control ***************************** #
+      #self.acc_vison_speed_ctl(enabled=enabled,CS=CS,frame=frame,can_sends=can_sends,ext_bus=ext_bus)
 
-  def get_target_speed(self, v_cruise_kph_prev):
-    v_cruise_kph = v_cruise_kph_prev
-    return v_cruise_kph
+    new_actuators = actuators.copy()
+    new_actuators.steer = self.apply_steer_last / P.STEER_MAX
 
-  def get_button_type(self, button_type):
-    self.type_status = "type_" + str(button_type)
-    self.button_picker = getattr(self, self.type_status, lambda:"default")
-    return self.button_picker()
-
-  def reset_button(self):
-    if self.button_type != 3:
-      self.button_type = 0
-
-  def type_default(self):
-    self.button_type = 0
-    return None
-
-  def type_0(self):
-    self.button_count = 0
-    self.target_speed = self.init_speed
-    speed_diff = round(self.target_speed - self.v_set_dis)
-    if speed_diff > 0:
-      self.button_type = 1
-    elif speed_diff < 0:
-      self.button_type = 2
-    return None
-
-  def type_1(self):
-    cruise_button = 1
-    self.button_count += 1
-    if self.target_speed == self.v_set_dis:
-      self.button_count = 0
-      self.button_type = 3
-    elif self.button_count > 10:
-      self.button_count = 0
-      self.button_type = 3
-    return cruise_button
-
-  def type_2(self):
-    cruise_button = 2
-    self.button_count += 1
-    if self.target_speed == self.v_set_dis:
-      self.button_count = 0
-      self.button_type = 3
-    elif self.button_count > 10:
-      self.button_count = 0
-      self.button_type = 3
-    return cruise_button
-
-  def type_3(self):
-    cruise_button = None
-    self.button_count += 1
-    if self.button_count > self.t_interval:
-      self.button_type = 0
-    return cruise_button
-
-  def get_curve_speed(self, target_speed_kph, v_cruise_kph_prev):
-    vision_v_cruise_kph = 255
-    if self.is_vison_control:
-      vision_v_cruise_kph = float(float(self.sm['longitudinalPlan'].visionTurnSpeed) * CV.MS_TO_KPH)
-      if int(vision_v_cruise_kph) == int(v_cruise_kph_prev):
-        vision_v_cruise_kph = 255
-      vision_v_cruise_kph = min(target_speed_kph, vision_v_cruise_kph)
-    
-    return min(target_speed_kph, vision_v_cruise_kph)
-
-  def get_button_control(self, CS, final_speed, v_cruise_kph_prev):
-    self.init_speed = round(min(final_speed, v_cruise_kph_prev) * CV.KPH_TO_MPH) if not self.is_metric else round(min(final_speed, v_cruise_kph_prev))
-    self.v_set_dis = round(CS.out.cruiseState.speed * CV.MS_TO_MPH) if not self.is_metric else round(CS.out.cruiseState.speed * CV.MS_TO_KPH)
-    cruise_button = self.get_button_type(self.button_type)
-    return cruise_button
-
-  def get_cruise_buttons(self, CS,v_cruise_kph_prev):
-    cruise_button = None
-    if not self.get_cruise_buttons_status(CS):
-      pass
-    elif CS.cruiseState.enabled:
-      set_speed_kph = self.get_target_speed(v_cruise_kph_prev)
-      target_speed_kph = min(v_cruise_kph_prev, set_speed_kph)
-
-      if self.is_vison_control:
-        self.final_speed_kph = self.get_curve_speed(target_speed_kph,v_cruise_kph_prev)
-      else:
-        self.final_speed_kph = target_speed_kph
-
-      cruise_button = self.get_button_control(CS, self.final_speed_kph,v_cruise_kph_prev)
-    return cruise_button
+    return new_actuators, can_sends

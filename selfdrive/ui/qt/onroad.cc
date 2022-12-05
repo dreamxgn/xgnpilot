@@ -264,7 +264,7 @@ void OnroadHud::paintEvent(QPaintEvent *event) {
   drawText(p, rect().center().x(), 290, speedUnit, 200);
 
   //视觉速度
-  drawText(p, rect().center().x(), 370, vtcSpeed, 200);
+  //drawText(p, rect().center().x(), 370, vtcSpeed, 200);
 
   // engage-ability icon
   if (engageable) {
