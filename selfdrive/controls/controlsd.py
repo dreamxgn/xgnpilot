@@ -406,13 +406,10 @@ class Controls:
 
     self.v_cruise_kph_last = self.v_cruise_kph
 
-    if CS.cruiseState.enabled:
-      if not self.CP.pcmCruise:
-        self.v_cruise_kph = update_v_cruise(self.v_cruise_kph, CS.buttonEvents, self.button_timers, self.enabled, self.is_metric)
-      elif self.CP.pcmCruise and not self.CP.pcmCruiseSpeed:
-        self.v_cruise_kph = update_v_cruise_speed(self.v_cruise_kph, CS.buttonEvents, self.button_timers, self.enabled, self.is_metric)
-      elif self.CP.pcmCruise:
-        self.v_cruise_kph = CS.cruiseState.speed * CV.MS_TO_KPH
+    if not self.CP.pcmCruise:
+      self.v_cruise_kph = update_v_cruise(self.v_cruise_kph, CS.buttonEvents, self.button_timers, self.enabled, self.is_metric)
+    elif CS.cruiseState.enabled:
+      self.v_cruise_kph = CS.cruiseState.speed * CV.MS_TO_KPH
 
     # decrement the soft disable timer at every step, as it's reset on
     # entrance in SOFT_DISABLING state
@@ -440,11 +437,6 @@ class Controls:
       else:
         # ENABLED
         if self.state == State.enabled:
-          if not self.CP.pcmCruise and CS.cruiseState.enabled and (not self.cruiseState_enabled_last):
-            self.v_cruise_kph = initialize_v_cruise(CS.vEgo, CS.buttonEvents, self.v_cruise_kph_last)
-          elif (self.CP.pcmCruise and not self.CP.pcmCruiseSpeed) and CS.cruiseState.enabled and (not self.cruiseState_enabled_last):
-            self.v_cruise_kph = initialize_v_cruise(CS.vEgo, CS.buttonEvents, self.v_cruise_kph_last)
-            
           if self.events.any(ET.SOFT_DISABLE):
             self.state = State.softDisabling
             self.soft_disable_timer = int(SOFT_DISABLE_TIME / DT_CTRL) #软禁用计数器 300
@@ -482,11 +474,7 @@ class Controls:
           else:
             self.state = State.enabled
           self.current_alert_types.append(ET.ENABLE)
-
-          if not self.CP.pcmCruise and CS.cruiseState.enabled:
-            self.v_cruise_kph = initialize_v_cruise(CS.vEgo, CS.buttonEvents, self.v_cruise_kph_last)
-          elif (self.CP.pcmCruise and not self.CP.pcmCruiseSpeed) and CS.cruiseState.enabled:
-            self.v_cruise_kph = initialize_v_cruise(CS.vEgo, CS.buttonEvents, self.v_cruise_kph_last)
+          self.v_cruise_kph = initialize_v_cruise(CS.vEgo, CS.buttonEvents, self.v_cruise_kph_last)
 
     self.cruiseState_enabled_last = CS.cruiseState.enabled
     
