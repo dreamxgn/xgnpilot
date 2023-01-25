@@ -263,9 +263,6 @@ void OnroadHud::paintEvent(QPaintEvent *event) {
   configFont(p, "Open Sans", 66, "Regular");
   drawText(p, rect().center().x(), 290, speedUnit, 200);
 
-  //视觉速度
-  //drawText(p, rect().center().x(), 370, vtcSpeed, 200);
-
   // engage-ability icon
   if (engageable) {
 
@@ -354,7 +351,6 @@ void NvgWindow::drawLead(QPainter &painter, const cereal::ModelDataV2::LeadDataV
   const float leadBuff = 40.;
 
   const float d_rel = lead_data.getX()[0]; 
-
   const float v_rel = lead_data.getV()[0];
 
   float fillAlpha = 0;
@@ -408,15 +404,9 @@ void NvgWindow::paintGL() {
     if (true) {
       auto leads = (*s->sm)["modelV2"].getModelV2().getLeadsV3();
       if (leads[0].getProb() > 0.5) {
-        /*if(s->scene.lead_vertices[0].x()>1 || s->scene.lead_vertices[0].y()>1){
-          LOGW("Lead-1 x %.2f y %.2f",s->scene.lead_vertices[0].x(),s->scene.lead_vertices[0].y());
-        }*/
         drawLead(painter, leads[0], s->scene.lead_vertices[0]);
       }
       if (leads[1].getProb() > 0.5 && (std::abs(leads[1].getX()[0] - leads[0].getX()[0]) > 3.0)) {
-        /*if(s->scene.lead_vertices[1].x()>1 || s->scene.lead_vertices[1].y()>1){
-          LOGW("Lead-2 x %.2f y %.2f",s->scene.lead_vertices[1].x(),s->scene.lead_vertices[1].y());
-        }*/
         drawLead(painter, leads[1], s->scene.lead_vertices[1]);
       }
     }

@@ -133,9 +133,6 @@ class CarController():
             self.graButtonStatesToSend = None
             self.graMsgSentCount = 0
 
-      # ***** vison speed control ***************************** #
-      #self.acc_vison_speed_ctl(enabled=enabled,CS=CS,frame=frame,can_sends=can_sends,ext_bus=ext_bus)
-
     new_actuators = actuators.copy()
     new_actuators.steer = self.apply_steer_last / P.STEER_MAX
 
