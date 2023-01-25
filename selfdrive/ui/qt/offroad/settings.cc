@@ -65,6 +65,12 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "记录行驶数据",
       "../assets/offroad/icon_road.png",
     },
+    {
+      "AutoChangeLane",
+      "辅助变道",
+      "开启转弯灯并轻推方向盘后自动完成变道",
+      "../assets/offroad/icon_road.png",
+    },
 #ifdef ENABLE_MAPS
     {
       "NavSettingTime24h",

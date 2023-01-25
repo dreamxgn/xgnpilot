@@ -155,6 +155,7 @@ class Controls:
     self.cruise_mismatch_counter = 0
     self.can_rcv_error_counter = 0
     self.last_blinker_frame = 0
+    self.auto_change_lane = params.get_bool("AutoChangeLane")
     self.distance_traveled = 0
     self.last_functional_fan_frame = 0
     self.events_prev = []
@@ -240,19 +241,24 @@ class Controls:
         self.events.add(EventName.calibrationInvalid)
 
     # Handle lane change
-    if self.sm['lateralPlan'].laneChangeState == LaneChangeState.preLaneChange:
-      direction = self.sm['lateralPlan'].laneChangeDirection
-      if (CS.leftBlindspot and direction == LaneChangeDirection.left) or \
-         (CS.rightBlindspot and direction == LaneChangeDirection.right):
-        self.events.add(EventName.laneChangeBlocked)
-      else:
-        if direction == LaneChangeDirection.left:
-          self.events.add(EventName.preLaneChangeLeft)
+    if self.auto_change_lane == True:
+      if self.sm['lateralPlan'].laneChangeState == LaneChangeState.preLaneChange:
+        direction = self.sm['lateralPlan'].laneChangeDirection
+        if (CS.leftBlindspot and direction == LaneChangeDirection.left) or \
+          (CS.rightBlindspot and direction == LaneChangeDirection.right):
+          self.events.add(EventName.laneChangeBlocked)
         else:
-          self.events.add(EventName.preLaneChangeRight)
-    elif self.sm['lateralPlan'].laneChangeState in (LaneChangeState.laneChangeStarting,
-                                                    LaneChangeState.laneChangeFinishing):
-      self.events.add(EventName.laneChange)
+          if direction == LaneChangeDirection.left:
+            self.events.add(EventName.preLaneChangeLeft)
+          else:
+            self.events.add(EventName.preLaneChangeRight)
+      elif self.sm['lateralPlan'].laneChangeState in (LaneChangeState.laneChangeStarting,
+                                                      LaneChangeState.laneChangeFinishing):
+        self.events.add(EventName.laneChange)
+
+
+
+    
 
     if not CS.canValid:
       self.events.add(EventName.canError)
